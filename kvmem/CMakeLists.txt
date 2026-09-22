@@ -8,7 +8,7 @@ if (WIN32 AND KVMEM_ENABLE_NVME)
     message(FATAL_ERROR "NVMe storage is not supported on Windows; use KVMEM_ENABLE_NVME=OFF")
 endif()
 
-add_library(kvmem
+add_library(kvmem STATIC
     src/host/kvmem_store.cpp
     src/host/kvmem_runtime.cpp
     src/host/raw_kv_store.cpp

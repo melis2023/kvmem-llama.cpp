@@ -13,3 +13,9 @@ __pycache__/
 /build-ui/
 
 /build-win*/
+/build-cuda12.4-dll/
+/build-cuda13.4-dll/
+/dist-cuda12.4/
+/dist-cuda13.4-dll/
+*.zip
+/.omo/
