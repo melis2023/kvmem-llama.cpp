@@ -1,6 +1,6 @@
 # KVMem + llama.cpp
 
-**Prebuilt downloads:** [Windows x64 CUDA 13 / 12 (rc3)](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc3) · [Linux / WSL2 x86_64 (rc1)](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc1)
+**Prebuilt downloads:** [Windows x64 CUDA 13 / 12 (rc3)](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc3) · [Linux / WSL2 x86_64 (rc1)](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc1) · [Windows / Linux ROCm (beta)](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/rc3-rocm-beta)
 
 **QQ community / QQ 交流群：1040777853**
 
@@ -69,6 +69,8 @@ The project builds on llama.cpp's CUDA backend, with the platform above used for
 | Windows x64 — CUDA 13.2.86 | [v0.16.0-rc3](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc3) | Recommended **runtime** ZIP; GPU targets 75/80/86/89/90/120a. Quantizer is a separate optional ZIP. |
 | Windows x64 — CUDA 12.9.86 | [v0.16.0-rc3](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc3) | Alternative **runtime** ZIP; GPU targets 70/75/80/86/89/90/120a, including Volta. Quantizer is a separate optional ZIP. |
 | Linux / WSL2 x86_64 | [v0.16.0-rc1](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/v0.16.0-rc1) | Existing Linux CUDA package; no rc3 Linux/WSL rebuild is included. |
+| Windows x64 — ROCm (beta) | [rc3-rocm-beta](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/rc3-rocm-beta) | Native HIP runtime ZIP for gfx1100/gfx1200/gfx1201 (RX 7900 / 9060 XT / 9070 series). |
+| Linux / WSL2 x86_64 — ROCm (beta) | [rc3-rocm-beta](https://github.com/kvmem/kvmem-llama.cpp/releases/tag/rc3-rocm-beta) | Runtime tar.gz built on Ubuntu 24.04 with ROCm 7.2.x; other distributions may need a source build. |
 
 No model weights are bundled. For a Windows text-only setup, download the
 ready-made IQ3 `-mtp` model linked in the [Windows quick start](scripts/windows/README.md).
@@ -107,6 +109,8 @@ The build script defaults to `CMAKE_CUDA_ARCHITECTURES=120a-real` for the tested
 
 ## Browser chat
 
+The updated Windows rc3 runtime packages include both UIs: **full UI by default** at `share/kvmem/ui`, plus the lightweight UI at `share/kvmem/ui-lightweight`. Their independent `start-iq3.ps1` / `start-iq4.ps1` scripts accept only `-Model`, `-Mmproj` and optional `-Gpu` (default `0`, index or UUID). They directly invoke the server and no longer use shared launch helpers. To choose the lightweight UI, edit `$UiDir` in the script to end in `share\kvmem\ui-lightweight`; to disable UI, replace `--webui` with `--no-ui`. Edit `$Port = 18200` to change the port. Download the runtime ZIP again for these updated scripts. Full UI does not add server-side tool execution or stream resumption to the KVMem backend. See the [Windows runtime guide](scripts/windows/README.md) for a complete launch command.
+
 The optional lightweight UI reuses llama.cpp's Markdown/code renderer, input components and browser-local history. It supports text and images, separate thinking effort/budget controls, stopping generation, and server-measured decode speed. It does not execute tools or manage model loading.
 
 Build the static page once with Node.js 22 and npm:
@@ -114,6 +118,8 @@ Build the static page once with Node.js 22 and npm:
 ```bash
 python3 scripts/build-webui.py
 ```
+
+Add `--full-ui` to build the full upstream UI, including its generated icons and PWA assets. Use separate `--output` directories when keeping both builds.
 
 Then start the rebuilt server with the usual IQ3/IQ4 script and open `http://127.0.0.1:18200/`. The server automatically serves `build/share/kvmem/ui/` when present. Precompiled packages can include the page, so users do not need Node.js. `--ui-dir PATH` selects another static directory; `--no-ui` disables the page.
 
@@ -311,9 +317,9 @@ llama-kvmem-server -m model.gguf -ctk q8_0 -ctv q4_0
 ```
 
 The Linux recipes accept `--cache-type-k q8_0 --cache-type-v q4_0`;
-Windows recipes accept `-CacheTypeK q8_0 -CacheTypeV q4_0`. These optional
-settings override the recipe defaults for each component independently.
-Existing recipe defaults are unchanged.
+in the updated Windows rc3 runtime scripts, edit `-ctk q8_0 -ctv q4_0`
+directly in the script. The older source launcher also accepts
+`-CacheTypeK q8_0 -CacheTypeV q4_0`. Existing recipe defaults are unchanged.
 
 Flag compatibility does not imply support for every llama.cpp cache type or
 mixed K/V combination. These flags affect the main model; MTP cache precision
@@ -369,7 +375,7 @@ Pass the downloaded projector explicitly with `MMPROJ=/path/mmproj-Qwen3.8-27B-Q
 --enable-thinking --reasoning-budget 4096
 ```
 
-IQ3 now defaults to CPU vision (`--no-mmproj-offload`) to leave more GPU memory for inference. Vision remains available. To explicitly use GPU vision, set `MMPROJ_DEVICE=gpu` on Linux/WSL or pass `-VisionDevice gpu` to the Windows launcher. Historical performance tables below retain their original projector placement.
+IQ3 now defaults to CPU vision (`--no-mmproj-offload`) to leave more GPU memory for inference. Vision remains available. To explicitly use GPU vision, set `MMPROJ_DEVICE=gpu` on Linux/WSL; in the updated Windows rc3 runtime script, replace `--no-mmproj-offload` with `--mmproj-offload`. Historical performance tables below retain their original projector placement.
 
 ### IQ4 27B — optional experimental comparison
 
@@ -467,8 +473,11 @@ on the LAN, pass `--host 0.0.0.0` to the server or to the launchers
 or set `HOST` / `LLAMA_ARG_HOST` (e.g. `HOST=0.0.0.0 scripts/start-iq3.sh`). Open
 firewall ports for LAN clients. To require a key, pass `--api-key sk-xxx` to the
 server or Linux launchers (`start-iq3.sh --api-key sk-xxx`), or `-ApiKey 'sk-xxx'`
-/ `-ApiKeyFile path` on Windows (mirroring llama-server); every route except
-`/health` then needs `Authorization: Bearer sk-xxx` (or `X-Api-Key: sk-xxx`).
+/ `-ApiKeyFile path` on Windows (mirroring llama-server). Protected routes then
+need `Authorization: Bearer sk-xxx` (or `X-Api-Key: sk-xxx`); `/health`,
+`/v1/health`, OPTIONS requests and mounted UI static assets remain public.
+On Linux, relative `--api-key-file` paths are resolved from the caller's current
+directory and checked for readability before an existing service is stopped.
 Native TLS is not supported. Stream `usage` includes
 `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`.
 
