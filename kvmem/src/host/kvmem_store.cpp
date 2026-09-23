@@ -344,10 +344,14 @@ bool KvMemStore::prefill_needs_offload(uint32_t resident_tokens,
         return false;
     }
     const uint32_t next = resident_tokens + incoming_tokens;
-    if (next > pool_tokens) {
-        return true;
-    }
-    return next > gpu_high_watermark_tokens(pool_tokens);
+    // Hysteresis: the physical slot pool (budget + gen_reserve) is the only
+    // trigger. The previous soft 0.95 high-watermark fired every ~6-7 prefill
+    // batches (band ≈ 13k tokens) and each fire cost a full plan/apply +
+    // stage-out + RoPE remap; deferring to pool-full widens the band to the
+    // whole gen_reserve slack and batches reselects. Decode stays safe because
+    // the same prepare_working_set call still contracts to prefill_budget
+    // before any decode allocation can run.
+    return next > pool_tokens;
 }
 
 std::vector<uint32_t> KvMemStore::pick_prefill_pressure_blocks(const std::vector<uint32_t> & mandatory) const {

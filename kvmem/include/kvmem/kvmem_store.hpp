@@ -381,7 +381,9 @@ public:
     uint32_t gpu_low_watermark_tokens(uint32_t pool_tokens) const;
 
     // True when the next prefill chunk would overflow the physical GPU pool
-    // (budget + gen_reserve) or its high watermark. History longer than the
+    // (budget + gen_reserve). Soft high-watermark triggering was removed: the
+    // pool itself is the only limit, so eviction events are batched at true
+    // capacity instead of every few prefill batches. History longer than the
     // semantic prefill budget is not enough: unused gen_reserve slots are
     // slack, then pressure contracts back to prefill_budget in one reselect.
     bool prefill_needs_offload(uint32_t resident_tokens,

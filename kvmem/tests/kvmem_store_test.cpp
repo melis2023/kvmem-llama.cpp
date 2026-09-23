@@ -624,7 +624,8 @@ static void test_prefill_watermark_offload_predicate() {
     // History > semantic budget is not enough: GPU still has gen_reserve slack.
     CHECK(!s.prefill_needs_offload(0, 32, pool));
     CHECK(!s.prefill_needs_offload(32 * 4, 32, pool));  // 160 < 230
-    CHECK(s.prefill_needs_offload(200, 40, pool));    // over high watermark
+    // Soft high watermark (230) no longer triggers: slack absorbs up to pool.
+    CHECK(!s.prefill_needs_offload(200, 40, pool));    // 240 ≤ 256 pool
     CHECK(s.prefill_needs_offload(240, 32, pool));    // over hard pool
     CHECK(!s.prefill_needs_offload(0, 0, pool));
 
